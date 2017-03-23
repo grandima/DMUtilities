@@ -1,0 +1,6 @@
+framework module DMUtilities {
+  umbrella header "DMUtilities-umbrella.h"
+
+  export *
+  module * { export * }
+}

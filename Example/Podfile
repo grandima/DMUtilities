@@ -1,0 +1,6 @@
+use_frameworks!
+target 'DMUtilities_Tests' do
+  pod 'DMUtilities', :path => '../'
+  
+  
+end

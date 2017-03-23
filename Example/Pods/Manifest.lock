@@ -1,0 +1,16 @@
+PODS:
+  - DMUtilities (0.1.0)
+
+DEPENDENCIES:
+  - DMUtilities (from `../`)
+
+EXTERNAL SOURCES:
+  DMUtilities:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  DMUtilities: 1f186639cf32131a857f82b1927d5c7a53e67b41
+
+PODFILE CHECKSUM: 1ed43311215ce075a77820f13c000bf86e407453
+
+COCOAPODS: 1.2.0
