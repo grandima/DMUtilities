@@ -11,25 +11,29 @@ import Foundation
 protocol DataProvider: class {
     associatedtype Item
     
-    func objectAtIndexPath(indexPath: NSIndexPath) -> Item
+    func object(at indexPath: IndexPath) -> Item
     
-    func numberOfItemsInSection(section: Int) -> Int
+    func numberOfItems(in section: Int) -> Int
 }
 
 
 protocol AugmentedDataProvider: DataProvider {
-    func numberOfSections() -> Int
-    func title(forHeaderInSection section: Int) -> String?
+    var numberOfSections: Int { get }
+    func titleForHeader(in section: Int) -> String?
+}
+extension AugmentedDataProvider {
+    var numberOfSections: Int { return 1 }
+    func titleForHeader(in section: Int) -> String? { return nil }
 }
 
 protocol DataProviderDelegate: class {
-    associatedtype Item: AnyObject
+    associatedtype Item: Any
     func dataProviderDidUpdate(updates: [DataProviderUpdate<Item>]?)
 }
 
 enum DataProviderUpdate<Object> {
-    case Insert(NSIndexPath)
-    case Update(NSIndexPath, Object)
-    case Move(NSIndexPath, NSIndexPath)
-    case Delete(NSIndexPath)
+    case Insert(IndexPath)
+    case Update(IndexPath, Object)
+    case Move(IndexPath, IndexPath)
+    case Delete(IndexPath)
 }

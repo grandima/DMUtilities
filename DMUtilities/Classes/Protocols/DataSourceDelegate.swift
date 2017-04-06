@@ -9,6 +9,6 @@
 import Foundation
 protocol DataSourceDelegate: class {
     associatedtype Item
-    func cellIdentifierForObject(object: Item) -> String
+    func cellIdentifier(for object: Item) -> String
 }
 

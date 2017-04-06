@@ -7,7 +7,7 @@
 //
 
 import UIKit
-class TableViewDataSource<Delegate: DataSourceDelegate, Data: DataProvider, Cell: UITableViewCell>: NSObject, UITableViewDataSource where Delegate.Item == Data.Item, Cell: ConfigurableCell, Cell.DataSource == Data.Item {
+class TableViewDataSource<Delegate: DataSourceDelegate, Data: AugmentedDataProvider, Cell: UITableViewCell>: NSObject, UITableViewDataSource where Delegate.Item == Data.Item, Cell: ConfigurableCell, Cell.Entity == Data.Item {
     
     required init(tableView: UITableView, dataProvider: Data, delegate: Delegate) {
         self.tableView = tableView
@@ -23,18 +23,33 @@ class TableViewDataSource<Delegate: DataSourceDelegate, Data: DataProvider, Cell
     private weak var delegate: Delegate!
     
     // MARK: UITableViewDataSource
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return dataProvider.numberOfItemsInSection(section: section)
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return dataProvider.numberOfSections
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let object = dataProvider.objectAtIndexPath(indexPath: indexPath)
-        let identifier = delegate.cellIdentifierForObject(object)
-        guard let cell = tableView.dequeueReusableCellWithIdentifier(identifier, forIndexPath: indexPath) as? Cell
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return dataProvider.titleForHeader(in: section)
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dataProvider.numberOfItems(in: section)
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let object = dataProvider.object(at: indexPath)
+        let identifier = delegate.cellIdentifier(for: object)
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: identifier, for: indexPath) as? Cell
             else { fatalError("Unexpected cell type at \(indexPath)") }
-        cell.configureForObject(object)
+        cell.configure(for: object)
         return cell
     }
+    
+    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+        return dataProvider.numberOfSections
+    }
+    
+
     
     func processUpdates(updates: [DataProviderUpdate<Data.Item>]?) {
 
@@ -43,15 +58,15 @@ class TableViewDataSource<Delegate: DataSourceDelegate, Data: DataProvider, Cell
         for update in updates {
             switch update {
             case .Insert(let indexPath):
-                tableView.insertRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
+                tableView.insertRows(at: [indexPath], with: .fade)
             case .Update(let indexPath, let object):
-                guard let cell = tableView.cellForRowAtIndexPath(indexPath) as? Cell else { break }
-                cell.configureForObject(object)
+                guard let cell = tableView.cellForRow(at: indexPath) as? Cell else { break }
+                cell.configure(for: object)
             case .Move(let indexPath, let newIndexPath):
-                tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
-                tableView.insertRowsAtIndexPaths([newIndexPath], withRowAnimation: .Fade)
+                tableView.deleteRows(at: [indexPath], with: .fade)
+                tableView.insertRows(at: [newIndexPath], with: .fade)
             case .Delete(let indexPath):
-                tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
+                tableView.deleteRows(at: [indexPath], with: .fade)
             }
         }
         tableView.endUpdates()
