@@ -3,62 +3,8 @@ import PlaygroundSupport
 import Foundation
 
 
-//https://gist.github.com/felginep/039ca3b21e4f0cabb1c06126d9164680
-class Promise<Value> {
-
-    enum State<T> {
-        case pending
-        case resolved(T)
-    }
-
-    private var state: State<Value> = .pending
-    private var callbacks: [(Value) -> Void] = []
-
-    init(executor: (_ resolve: @escaping (Value) -> Void) -> Void) {
-        executor(resolve)
-    }
-
-    // observe
-    public func then(_ onResolved: @escaping (Value) -> Void) {
-        callbacks.append(onResolved)
-        triggerCallbacksIfResolved()
-    }
-
-    // flatMap
-    public func then<NewValue>(_ onResolved: @escaping (Value) -> Promise<NewValue>) -> Promise<NewValue> {
-        return Promise<NewValue> { resolve in
-            then { value in
-                onResolved(value).then(resolve)
-            }
-        }
-    }
-
-    // map
-    public func then<NewValue>(_ onResolved: @escaping (Value) -> NewValue) -> Promise<NewValue> {
-        return then { value in
-            return Promise<NewValue> { resolve in
-                resolve(onResolved(value))
-            }
-        }
-    }
-
-    private func resolve(value: Value) {
-        updateState(to: .resolved(value))
-    }
-
-    private func updateState(to newState: State<Value>) {
-        guard case .pending = state else { return }
-        state = newState
-        triggerCallbacksIfResolved()
-    }
-
-    private func triggerCallbacksIfResolved() {
-        guard case let .resolved(value) = state else { return }
-        callbacks.forEach { callback in
-            callback(value)
-        }
-        callbacks.removeAll()
-    }
+func after(_ timeInterval: TimeInterval = 0.1, work: @escaping () -> Void) {
+    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + timeInterval, execute: work)
 }
 
 //https://developer.apple.com/documentation/combine/future/3333367-init
@@ -86,11 +32,8 @@ final class MyFuture<Output, Failure> where Failure: Error {
     }
     
     func myMap<NewValue>(_ onResolved: @escaping (FutureResult) -> Result<NewValue, Failure>) -> MyFuture<NewValue, Failure> {
-        observe { (<#Result<Output, Error>#>) in
-            <#code#>
-        }
-        return then { value in
-            return Promise<NewValue> { resolve in
+        return self.myFlatMap { (value) in
+            return MyFuture<NewValue, Failure>.init { (resolve) in
                 resolve(onResolved(value))
             }
         }
@@ -109,3 +52,51 @@ final class MyFuture<Output, Failure> where Failure: Error {
     }
 }
 
+
+struct Speaker {
+    func getName(_ completion: @escaping (String?, Error?)->Void) {
+        DispatchQueue.main.async {
+            completion("Boom 3", nil)
+        }
+    }
+    
+    var getName: MyFuture<String, Error> {
+        return MyFuture<String, Error>.init { (promise) in
+            self.getName { (name, error) in
+                if let name = name {
+                    promise(.success(name))
+                } else if let error = error {
+                    promise(.failure(error))
+                }
+            }
+        }
+    }
+}
+
+struct SpeakerSupervisor {
+    func getSpeaker(_ completion: @escaping (Speaker, Error?)->Void) {
+        DispatchQueue.main.async {
+            completion(Speaker.init(), nil)
+        }
+    }
+    
+    func speaker: MyFuture<Speaker, Error> {
+        return MyFuture<String, Error>.init { (promise) in
+            get
+        }
+    }
+}
+
+func checkifTwoNamesAreEqual(speaker1: Speaker, speaker2: Speaker) -> MyFuture {
+    
+}
+
+func fetchUser(id: Int) -> MyFuture<Speaker, Error> {
+    return MyFuture { resolve in
+        after(0.1) {
+            resolve(.success(User(id: id, name: "M.D.")))
+        }
+    }
+}
+
+fetchUser(id: 5)
